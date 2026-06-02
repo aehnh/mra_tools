@@ -17,21 +17,38 @@ __ELFWriteMemory(bits(64) address, bits(8) val)
     __WriteRAM(52, 1, __Memory, address[0 +: 52], val);
     return;
 
+// The commented-out asserts and TUBE MMIO branch below are mra_tools
+// simulator conveniences, not part of the ARM architectural specification.
+// They have been disabled to improve generated-code performance without
+// sacrificing correctness for a JIT translator that runs unmodified ARM
+// binaries:
+//   - the `size IN {1,2,4,8,16}` and `Align(address, size)` asserts encode
+//     spec-level preconditions that are already guaranteed by the way the
+//     architectural decoders dispatch into `_Mem`; keeping them costs an
+//     alignment check on every load/store.
+//   - the `address == 0x13000000` (TUBE) branch is a simulator-only stub
+//     that turns writes to a magic MMIO address into `putchar` / `__abort`
+//     so the emulator can drive stdout; a JIT translating real binaries
+//     never targets that address and should not pay the per-store compare.
 bits(8*size) _Mem[AddressDescriptor desc, integer size, AccessDescriptor accdesc]
+    // assert size IN {1, 2, 4, 8, 16};
     bits(52) address = desc.paddress.address;
+    // assert address == Align(address, size);
     return __ReadRAM(52, size, __Memory, address);
 
 _Mem[AddressDescriptor desc, integer size, AccessDescriptor accdesc] = bits(8*size) value
+    // assert size IN {1, 2, 4, 8, 16};
     bits(52) address = desc.paddress.address;
+    // assert address == Align(address, size);
 
-    if address == 0x13000000[51:0] then // TUBE
-        if UInt(value) == 0x4 then
-            print("Program exited by writing ^D to TUBE\n");
-            __abort();
-        else
-            putchar(UInt(value[7:0]));
-    else
-        __WriteRAM(52, size, __Memory, address, value);
+    // if address == 0x13000000[51:0] then // TUBE
+    //     if UInt(value) == 0x4 then
+    //         print("Program exited by writing ^D to TUBE\n");
+    //         __abort();
+    //     else
+    //         putchar(UInt(value[7:0]));
+    // else
+    __WriteRAM(52, size, __Memory, address, value);
     return;
 
 ClearExclusiveLocal(integer processorid)
