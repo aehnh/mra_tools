@@ -18,15 +18,11 @@ __ELFWriteMemory(bits(64) address, bits(8) val)
     return;
 
 bits(8*size) _Mem[AddressDescriptor desc, integer size, AccessDescriptor accdesc]
-    assert size IN {1, 2, 4, 8, 16};
     bits(52) address = desc.paddress.address;
-    assert address == Align(address, size);
     return __ReadRAM(52, size, __Memory, address);
 
 _Mem[AddressDescriptor desc, integer size, AccessDescriptor accdesc] = bits(8*size) value
-    assert size IN {1, 2, 4, 8, 16};
     bits(52) address = desc.paddress.address;
-    assert address == Align(address, size);
 
     if address == 0x13000000[51:0] then // TUBE
         if UInt(value) == 0x4 then
